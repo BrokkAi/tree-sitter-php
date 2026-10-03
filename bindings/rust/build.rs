@@ -7,6 +7,49 @@ fn main() {
     let mut c_config = cc::Build::new();
     c_config.std("c11").include(&php_dir);
 
+    c_config.define("tree_sitter_php", "brokk_tree_sitter_php");
+    c_config.define(
+        "tree_sitter_php_external_scanner_create",
+        "brokk_tree_sitter_php_external_scanner_create",
+    );
+    c_config.define(
+        "tree_sitter_php_external_scanner_destroy",
+        "brokk_tree_sitter_php_external_scanner_destroy",
+    );
+    c_config.define(
+        "tree_sitter_php_external_scanner_scan",
+        "brokk_tree_sitter_php_external_scanner_scan",
+    );
+    c_config.define(
+        "tree_sitter_php_external_scanner_serialize",
+        "brokk_tree_sitter_php_external_scanner_serialize",
+    );
+    c_config.define(
+        "tree_sitter_php_external_scanner_deserialize",
+        "brokk_tree_sitter_php_external_scanner_deserialize",
+    );
+    c_config.define("tree_sitter_php_only", "brokk_tree_sitter_php_only");
+    c_config.define(
+        "tree_sitter_php_only_external_scanner_create",
+        "brokk_tree_sitter_php_only_external_scanner_create",
+    );
+    c_config.define(
+        "tree_sitter_php_only_external_scanner_destroy",
+        "brokk_tree_sitter_php_only_external_scanner_destroy",
+    );
+    c_config.define(
+        "tree_sitter_php_only_external_scanner_scan",
+        "brokk_tree_sitter_php_only_external_scanner_scan",
+    );
+    c_config.define(
+        "tree_sitter_php_only_external_scanner_serialize",
+        "brokk_tree_sitter_php_only_external_scanner_serialize",
+    );
+    c_config.define(
+        "tree_sitter_php_only_external_scanner_deserialize",
+        "brokk_tree_sitter_php_only_external_scanner_deserialize",
+    );
+
     #[cfg(target_env = "msvc")]
     c_config.flag("-utf-8");
 
@@ -21,5 +64,5 @@ fn main() {
         println!("cargo:rerun-if-changed={}", scanner_path.to_str().unwrap());
     }
 
-    c_config.compile("tree-sitter-php");
+    c_config.compile("brokk-tree-sitter-php");
 }
