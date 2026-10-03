@@ -16,7 +16,7 @@ autoexamples = false
 
 build = "bindings/rust/build.rs"
 include = [
-  "LICENSE",
+  "/LICENSE",
   "common",
   "bindings/rust",
   "php/grammar.js",
