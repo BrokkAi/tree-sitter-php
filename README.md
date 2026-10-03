@@ -1,8 +1,19 @@
-# Brokk PHP grammar release candidate
+# Brokk's PHP Grammar for Tree-sitter
 
-Unpublished candidate `brokk-tree-sitter-php` 0.24.3 for the proposed
-`BrokkAi/tree-sitter-php` fork. Repository creation, crate ownership verification,
-and publication are pending the authorized local release session.
+This is the Brokk-owned and independently maintained fork of
+[`tree-sitter/tree-sitter-php`](https://github.com/tree-sitter/tree-sitter-php).
+Brokk maintains this fork for its code-intelligence tooling and publishes the
+Rust package as
+[`brokk-tree-sitter-php`](https://crates.io/crates/brokk-tree-sitter-php).
+
+## Installation
+
+```toml
+[dependencies]
+brokk-tree-sitter-php = "=0.24.3"
+```
+
+## Changes from upstream
 
 Based on upstream v0.24.2 (`5b5627faaa290d89eb3d01b9bf47c3bb9e797dea`).
 Backports Apollo Nicolson's upstream commit
@@ -11,7 +22,7 @@ on constructor-promoted properties. Both PHP dialects are regenerated using
 Tree-sitter CLI 0.25.8, matching the baseline generated parser version.
 Upstream MIT licensing and author attribution are preserved.
 
-Only the Brokk-namespaced Rust crate is intended for publication. Other language
+Only the Brokk-namespaced Rust crate is published by this fork. Other language
 bindings retain their upstream names and must not be published by this fork.
 Rust native symbols are prefixed so the crate can coexist with upstream PHP.
 
@@ -30,16 +41,16 @@ cargo package --locked
 cargo publish --dry-run --locked
 ```
 
-## Release handoff
+## Releases
 
-Do not publish until Brokk organization access and the crates.io account and
-namespace are verified. Use the existing TypeScript fork's bootstrap convention:
-an already authorized short-lived token for first publication; immutable
-`v0.24.3` tag; clean tagged package; verify `.cargo_vcs_info.json` and archive
-SHA-256; publish only `brokk-tree-sitter-php` 0.24.3. No token or trusted publisher
-has been created or configured here. New persistent publisher configuration
-requires separate confirmation. Verify the registry before updating Bifrost to
-`tree-sitter-php = { package = "brokk-tree-sitter-php", version = "=0.24.3" }`.
+Tags use `v` followed by the Cargo package version and must remain immutable.
+Package from the clean tagged commit, verify the archive's
+`.cargo_vcs_info.json`, and record its SHA-256 before publication.
+The first publication uses authorized local Cargo credentials. The Rust-only
+`publish.yml` workflow is gated on `CARGO_TRUSTED_PUBLISHING=true`; enable it
+only after a trusted publisher is configured for organization `BrokkAi`,
+repository `tree-sitter-php`, workflow `publish.yml`, and environment `release`.
+Verify the registry release before updating dependent projects.
 
 ## Upstream README
 
