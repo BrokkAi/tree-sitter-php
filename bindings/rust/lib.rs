@@ -126,3 +126,29 @@ class Example {
         }
     }
 }
+
+#[cfg(test)]
+mod upstream_comparison {
+    #[test]
+    fn fork_coexists_with_upstream_and_repairs_promoted_visibility() {
+        for (upstream, fixed, prefix) in [
+            (
+                upstream_tree_sitter_php::LANGUAGE_PHP,
+                super::LANGUAGE_PHP,
+                "<?php ",
+            ),
+            (
+                upstream_tree_sitter_php::LANGUAGE_PHP_ONLY,
+                super::LANGUAGE_PHP_ONLY,
+                "",
+            ),
+        ] {
+            let code = format!("{prefix}class X {{ public function __construct(public private(set) string $name) {{}} }}");
+            let mut parser = tree_sitter::Parser::new();
+            parser.set_language(&upstream.into()).unwrap();
+            assert!(parser.parse(&code, None).unwrap().root_node().has_error());
+            parser.set_language(&fixed.into()).unwrap();
+            assert!(!parser.parse(&code, None).unwrap().root_node().has_error());
+        }
+    }
+}
