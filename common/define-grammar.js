@@ -289,7 +289,6 @@ module.exports = function defineGrammar(dialect) {
 
       _namespace_use_group: $ => seq(
         field('type', optional($._namespace_use_type)),
-        optional('\\'),
         $.namespace_name,
         '\\',
         field('body', $.namespace_use_group),
@@ -1262,11 +1261,12 @@ module.exports = function defineGrammar(dialect) {
 
       variadic_placeholder: _ => '...',
 
-      argument_placeholder: _ => '?',
-
       arguments: $ => seq(
         '(',
-        optional(seq(commaSep1(choice($.argument, $.variadic_placeholder)), optional(','))),
+        optional(choice(
+          seq(commaSep1($.argument), optional(',')),
+          $.variadic_placeholder,
+        )),
         ')',
       ),
 
@@ -1277,7 +1277,6 @@ module.exports = function defineGrammar(dialect) {
           alias($.relative_scope, $.name),
           $.variadic_unpacking,
           $.expression,
-          $.argument_placeholder,
         ),
       ),
 

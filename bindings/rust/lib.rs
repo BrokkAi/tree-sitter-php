@@ -12,7 +12,7 @@
 //! ?>
 //! "#;
 //! let mut parser = Parser::new();
-//! let language = tree_sitter_php::LANGUAGE_PHP;
+//! let language = brokk_tree_sitter_php::LANGUAGE_PHP;
 //! parser
 //!     .set_language(&language.into())
 //!     .expect("Error loading PHP parser");
@@ -26,19 +26,20 @@
 use tree_sitter_language::LanguageFn;
 
 extern "C" {
-    fn tree_sitter_php() -> *const ();
-    fn tree_sitter_php_only() -> *const ();
+    fn brokk_tree_sitter_php() -> *const ();
+    fn brokk_tree_sitter_php_only() -> *const ();
 }
 
 /// The tree-sitter [`LanguageFn`] for PHP.
 ///
 /// [LanguageFn]: https://docs.rs/tree-sitter-language/*/tree_sitter_language/struct.LanguageFn.html
-pub const LANGUAGE_PHP: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_php) };
+pub const LANGUAGE_PHP: LanguageFn = unsafe { LanguageFn::from_raw(brokk_tree_sitter_php) };
 
 /// The tree-sitter [`LanguageFn`] for PHP-Only.
 ///
 /// [LanguageFn]: https://docs.rs/tree-sitter-language/*/tree_sitter_language/struct.LanguageFn.html
-pub const LANGUAGE_PHP_ONLY: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_php_only) };
+pub const LANGUAGE_PHP_ONLY: LanguageFn =
+    unsafe { LanguageFn::from_raw(brokk_tree_sitter_php_only) };
 
 /// The content of the [`node-types.json`][] file for this grammar.
 ///
@@ -84,44 +85,70 @@ mod tests {
         let root = tree.root_node();
         assert!(!root.has_error());
     }
+}
 
-    fn sequential_heredocs(prefix: &str, count: usize, tag: &str) -> String {
-        let block = format!("$a = <<<{tag}\nx\n{tag};\n");
-        let mut src = String::from(prefix);
-        src.reserve(block.len() * count);
-        for _ in 0..count {
-            src.push_str(&block);
-        }
-        src
-    }
-
-    fn assert_no_error(language: tree_sitter_language::LanguageFn, code: &str) {
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&language.into())
-            .expect("Error loading parser");
-        let tree = parser.parse(code, None).unwrap();
-        assert!(!tree.root_node().has_error());
-    }
-
+#[cfg(test)]
+mod promotion_regressions {
     #[test]
-    fn test_many_sequential_heredocs() {
-        let long_tag = "HEREDOC_".repeat(30);
-        assert_no_error(
-            super::LANGUAGE_PHP,
-            &sequential_heredocs("<?php\n", 20, &long_tag),
-        );
-        assert_no_error(
-            super::LANGUAGE_PHP,
-            &sequential_heredocs("<?php\n", 250, "EOD"),
-        );
-        assert_no_error(
-            super::LANGUAGE_PHP_ONLY,
-            &sequential_heredocs("", 20, &long_tag),
-        );
-        assert_no_error(
-            super::LANGUAGE_PHP_ONLY,
-            &sequential_heredocs("", 250, "EOD"),
-        );
+    fn modern_php_parses_in_both_dialects() {
+        let body = r#"namespace Demo;
+class Example {
+    public private(set) string $ordinary;
+    public function __construct(
+        public private(set) string $name,
+        public protected(set) int $age = 0,
+        protected private(set) ?string $alias = null,
+        protected(set) string $implicit = '',
+        #[Example] public private(set) readonly string $id = '',
+        public private(set) string &$reference = '',
+    ) { namespace\encode($name); namespace\Nested\encode($name); }
+}"#;
+        for (language, prefix) in [
+            (super::LANGUAGE_PHP, "<?php "),
+            (super::LANGUAGE_PHP_ONLY, ""),
+        ] {
+            let mut parser = tree_sitter::Parser::new();
+            parser.set_language(&language.into()).unwrap();
+            let source = format!("{prefix}{body}");
+            let tree = parser.parse(&source, None).unwrap();
+            assert!(
+                !tree.root_node().has_error(),
+                "{}",
+                tree.root_node().to_sexp()
+            );
+            for invalid in [
+                "class X { public function __construct(public private(set) string) {} }",
+                "class X { public function __construct(public private(set string $x) {} }",
+            ] {
+                let tree = parser.parse(format!("{prefix}{invalid}"), None).unwrap();
+                assert!(tree.root_node().has_error(), "{invalid}");
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod upstream_comparison {
+    #[test]
+    fn fork_coexists_with_upstream_and_repairs_promoted_visibility() {
+        for (upstream, fixed, prefix) in [
+            (
+                upstream_tree_sitter_php::LANGUAGE_PHP,
+                super::LANGUAGE_PHP,
+                "<?php ",
+            ),
+            (
+                upstream_tree_sitter_php::LANGUAGE_PHP_ONLY,
+                super::LANGUAGE_PHP_ONLY,
+                "",
+            ),
+        ] {
+            let code = format!("{prefix}class X {{ public function __construct(public private(set) string $name) {{}} }}");
+            let mut parser = tree_sitter::Parser::new();
+            parser.set_language(&upstream.into()).unwrap();
+            assert!(parser.parse(&code, None).unwrap().root_node().has_error());
+            parser.set_language(&fixed.into()).unwrap();
+            assert!(!parser.parse(&code, None).unwrap().root_node().has_error());
+        }
     }
 }

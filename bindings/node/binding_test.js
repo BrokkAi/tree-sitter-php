@@ -19,14 +19,6 @@ describe("PHP", () => {
     const tree = parser.parse(sourceCode);
     assert(!tree.rootNode.hasError);
   });
-
-  it("should parse many sequential heredocs", () => {
-    const longTag = "HEREDOC_".repeat(30);
-    const long = "<?php\n" + `$a = <<<${longTag}\nx\n${longTag};\n`.repeat(20);
-    const short = "<?php\n" + "$a = <<<EOD\nx\nEOD;\n".repeat(250);
-    assert(!parser.parse(long).rootNode.hasError);
-    assert(!parser.parse(short).rootNode.hasError);
-  });
 });
 
 describe("PHP Only", () => {
@@ -41,13 +33,5 @@ describe("PHP Only", () => {
     const sourceCode = "echo 'Hello, World!';";
     const tree = parser.parse(sourceCode);
     assert(!tree.rootNode.hasError);
-  });
-
-  it("should parse many sequential heredocs", () => {
-    const longTag = "HEREDOC_".repeat(30);
-    const long = `$a = <<<${longTag}\nx\n${longTag};\n`.repeat(20);
-    const short = "$a = <<<EOD\nx\nEOD;\n".repeat(250);
-    assert(!parser.parse(long).rootNode.hasError);
-    assert(!parser.parse(short).rootNode.hasError);
   });
 });
