@@ -1,3 +1,59 @@
+# Brokk's PHP Grammar for Tree-sitter
+
+This is the Brokk-owned and independently maintained fork of
+[`tree-sitter/tree-sitter-php`](https://github.com/tree-sitter/tree-sitter-php).
+Brokk maintains this fork for its code-intelligence tooling and publishes the
+Rust package as
+[`brokk-tree-sitter-php`](https://crates.io/crates/brokk-tree-sitter-php).
+
+## Installation
+
+```toml
+[dependencies]
+brokk-tree-sitter-php = "=0.24.3"
+```
+
+## Changes from upstream
+
+Based on upstream v0.24.2 (`5b5627faaa290d89eb3d01b9bf47c3bb9e797dea`).
+Backports Apollo Nicolson's upstream commit
+`9700857ed4695afef44f9853a5e8bc7e1edb407e`, which permits asymmetric visibility
+on constructor-promoted properties. Both PHP dialects are regenerated using
+Tree-sitter CLI 0.25.8, matching the baseline generated parser version.
+Upstream MIT licensing and author attribution are preserved.
+
+Only the Brokk-namespaced Rust crate is published by this fork. Other language
+bindings retain their upstream names and must not be published by this fork.
+Rust native symbols are prefixed so the crate can coexist with upstream PHP.
+
+## Validate
+
+```sh
+npm ci --ignore-scripts
+npm rebuild tree-sitter-cli
+make generate TS="$PWD/node_modules/.bin/tree-sitter"
+git diff --exit-code -- php/src php_only/src
+node_modules/.bin/tree-sitter test
+npm run lint
+cargo fmt --check
+cargo test --locked
+cargo package --locked
+cargo publish --dry-run --locked
+```
+
+## Releases
+
+Tags use `v` followed by the Cargo package version and must remain immutable.
+Package from the clean tagged commit, verify the archive's
+`.cargo_vcs_info.json`, and record its SHA-256 before publication.
+The first publication uses authorized local Cargo credentials. The Rust-only
+`publish.yml` workflow is gated on `CARGO_TRUSTED_PUBLISHING=true`; enable it
+only after a trusted publisher is configured for organization `BrokkAi`,
+repository `tree-sitter-php`, workflow `publish.yml`, and environment `release`.
+Verify the registry release before updating dependent projects.
+
+## Upstream README
+
 # tree-sitter-php
 
 [![CI][ci]](https://github.com/tree-sitter/tree-sitter-php/actions/workflows/ci.yml)

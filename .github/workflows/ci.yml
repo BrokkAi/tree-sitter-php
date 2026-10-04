@@ -1,65 +1,37 @@
----
 name: CI
-
 on:
   push:
     branches: [master]
-    paths:
-      - "scripts.js"
-      - "common/*"
-      - "*/grammar.js"
-      - "*/src/**"
-      - "bindings/**"
-      - "binding.gyp"
   pull_request:
-    paths:
-      - "scripts.js"
-      - "common/*"
-      - "*/grammar.js"
-      - "*/src/**"
-      - "bindings/**"
-      - "binding.gyp"
-
-concurrency:
-  group: ${{github.workflow}}-${{github.ref}}
-  cancel-in-progress: true
-
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   test:
-    name: Test parsers
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-14]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-      - name: Set up tree-sitter
-        uses: tree-sitter/setup-action/cli@v2
-      - name: Set up examples
-        run: |-
-          git clone https://github.com/laravel/laravel examples/laravel --single-branch --depth=1 --filter=blob:none
-          git clone https://github.com/laravel/framework examples/framework --single-branch --depth=1 --filter=blob:none
-          git clone https://github.com/phacility/phabricator examples/phabricator --single-branch --depth=1 --filter=blob:none
-          git clone https://github.com/sebastianbergmann/phpunit examples/phpunit --single-branch --depth=1 --filter=blob:none
-          git clone https://github.com/WordPress/WordPress examples/WordPress --single-branch --depth=1 --filter=blob:none
-          git clone https://github.com/wikimedia/mediawiki examples/mediawiki --single-branch --depth=1 --filter=blob:none
-      - name: Run tests
-        uses: tree-sitter/parser-test-action@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          generate: false
-          test-rust: true
-          test-node: true
-          test-python: false
-          test-go: true
-          test-swift: false
-      - name: Parse examples
-        id: test
-        uses: tree-sitter/parse-action@v4
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
-          files: |
-            examples/**/*.php
-          invalid-files: |
-            examples/framework/tests/Foundation/fixtures/bad-syntax-strategy.php
-            examples/WordPress/wp-includes/php-compat/readonly.php
+          node-version: '24'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild tree-sitter-cli
+      - run: npx --no-install tree-sitter generate
+        working-directory: php
+      - run: npx --no-install tree-sitter generate
+        working-directory: php_only
+      - run: git diff --exit-code -- php/src php_only/src
+      - run: npx --no-install tree-sitter test
+      - run: npm run lint
+      - run: cargo fmt --check
+      - run: cargo test --locked
+      - run: cargo package --locked
+      - run: cargo publish --dry-run --locked
