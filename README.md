@@ -2,7 +2,8 @@
 
 This is the Brokk-owned and independently maintained fork of
 [`tree-sitter/tree-sitter-php`](https://github.com/tree-sitter/tree-sitter-php).
-Brokk maintains this fork for its code-intelligence tooling and publishes the
+`master` is Brokk's maintained release branch, following the convention of the
+other Brokk grammar forks. Brokk maintains this fork for its code-intelligence tooling and publishes the
 Rust package as
 [`brokk-tree-sitter-php`](https://crates.io/crates/brokk-tree-sitter-php).
 
@@ -43,14 +44,22 @@ cargo publish --dry-run --locked
 
 ## Releases
 
-Tags use `v` followed by the Cargo package version and must remain immutable.
+Prepare, validate, and merge release changes on `master`; create the release
+tag from that maintained line. Tags use `v` followed by the Cargo package
+version and must remain immutable.
 Package from the clean tagged commit, verify the archive's
 `.cargo_vcs_info.json`, and record its SHA-256 before publication.
 The first publication uses authorized local Cargo credentials. The Rust-only
 `publish.yml` workflow is gated on `CARGO_TRUSTED_PUBLISHING=true`; enable it
 only after a trusted publisher is configured for organization `BrokkAi`,
 repository `tree-sitter-php`, workflow `publish.yml`, and environment `release`.
+The publishing workflow verifies that the tagged commit is part of `master`.
 Verify the registry release before updating dependent projects.
+
+The existing `v0.24.3` tag and crates.io release remain at source
+`707c476eacceb35f7b7ac5a2929f20fa6430285f`. The released implementation is now
+reconciled onto `master` without rewriting upstream history. The former
+`brokk-0.24` branch is a historical reference; future releases use `master`.
 
 ## Upstream README
 
