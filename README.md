@@ -11,16 +11,22 @@ tooling and publishes the Rust package as
 
 ```toml
 [dependencies]
-brokk-tree-sitter-php = "=0.24.3"
+brokk-tree-sitter-php = "=0.24.4"
 ```
 
 ## Changes from upstream
 
-Based on upstream v0.24.2 (`5b5627faaa290d89eb3d01b9bf47c3bb9e797dea`).
+`brokk-tree-sitter-php` 0.24.4 is based on upstream v0.24.2
+(`5b5627faaa290d89eb3d01b9bf47c3bb9e797dea`).
 Backports Apollo Nicolson's upstream commit
 `9700857ed4695afef44f9853a5e8bc7e1edb407e`, which permits asymmetric visibility
 on constructor-promoted properties. Both PHP dialects are regenerated using
 Tree-sitter CLI 0.25.8, matching the baseline generated parser version.
+[Backports Jan Mohr's upstream PR #306](https://github.com/tree-sitter/tree-sitter-php/pull/306), commit
+`eddc18246a1226f17a08f61f0640568cb4f50e15`, which supports PHP 8.5 clone
+arguments and preserves the legacy clone AST for the one-argument form. The
+qualified upstream PR head is `5853b9157e1d043ef00d96529bd1e35a5ad15cec`;
+its generated parser output was regenerated locally with the pinned CLI.
 Upstream MIT licensing and author attribution are preserved.
 
 Only the Brokk-namespaced Rust crate is published by this fork. Other language
