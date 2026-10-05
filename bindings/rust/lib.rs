@@ -151,4 +151,48 @@ mod upstream_comparison {
             assert!(!parser.parse(&code, None).unwrap().root_node().has_error());
         }
     }
+
+    #[test]
+    fn clone_with_arguments_parse_as_a_complete_declaration_in_both_dialects() {
+        let body = "class X { public string $name; public function f(): static { return clone($this, ['name' => 'x']); } }";
+        for (upstream, fixed, prefix) in [
+            (
+                upstream_tree_sitter_php::LANGUAGE_PHP,
+                super::LANGUAGE_PHP,
+                "<?php ",
+            ),
+            (
+                upstream_tree_sitter_php::LANGUAGE_PHP_ONLY,
+                super::LANGUAGE_PHP_ONLY,
+                "",
+            ),
+        ] {
+            let source = format!("{prefix}{body}");
+            let mut parser = tree_sitter::Parser::new();
+            parser.set_language(&upstream.into()).unwrap();
+            assert!(parser.parse(&source, None).unwrap().root_node().has_error());
+
+            parser.set_language(&fixed.into()).unwrap();
+            let tree = parser.parse(&source, None).unwrap();
+            let root = tree.root_node();
+            assert!(!root.has_error(), "{}", root.to_sexp());
+            assert_eq!(root.start_byte(), 0);
+            assert_eq!(root.end_byte(), source.len());
+            let declaration = (0..root.named_child_count())
+                .map(|index| root.named_child(index).unwrap())
+                .find(|node| node.kind() == "class_declaration")
+                .unwrap();
+            assert_eq!(declaration.kind(), "class_declaration");
+            assert_eq!(declaration.end_byte(), source.len());
+
+            for invalid in [
+                "class X { public function f(): static { return clone($this, , ['name' => 'x']); } }",
+                "class X { public function f(): static { return clone($this, withProperties: ); } }",
+            ] {
+                let invalid_source = format!("{prefix}{invalid}");
+                let tree = parser.parse(&invalid_source, None).unwrap();
+                assert!(tree.root_node().has_error(), "{invalid}");
+            }
+        }
+    }
 }

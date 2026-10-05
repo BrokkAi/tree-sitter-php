@@ -70,6 +70,16 @@ const OTHER_RESERVED_KEYWORD_SET = [
   'never', 'null', 'object', 'string', 'true', 'void',
 ].map(r => keyword(r, false));
 
+/**
+ * The types a value can be cast to, e.g. `(int) $x`.
+ *
+ * @see https://www.php.net/manual/en/language.types.type-juggling.php#language.types.typecasting
+ */
+const CAST_TYPES = [
+  'array', 'binary', 'bool', 'boolean', 'double', 'float',
+  'int', 'integer', 'object', 'real', 'string', 'unset',
+];
+
 module.exports = function defineGrammar(dialect) {
   if (dialect !== 'php' && dialect !== 'php_only') {
     throw new Error(`Unknown dialect ${dialect}`);
@@ -639,20 +649,7 @@ module.exports = function defineGrammar(dialect) {
         keyword('void', false),
       ),
 
-      cast_type: _ => choice(
-        keyword('array', false),
-        keyword('binary', false),
-        keyword('bool', false),
-        keyword('boolean', false),
-        keyword('double', false),
-        keyword('float', false),
-        keyword('int', false),
-        keyword('integer', false),
-        keyword('object', false),
-        keyword('real', false),
-        keyword('string', false),
-        keyword('unset', false),
-      ),
+      cast_type: _ => choice(...CAST_TYPES.map(type => keyword(type, false))),
 
       _return_type: $ => seq(':', field('return_type', choice($.type, $.bottom_type))),
 
@@ -994,7 +991,58 @@ module.exports = function defineGrammar(dialect) {
 
       error_suppression_expression: $ => prec(PREC.INC, seq('@', $.expression)),
 
-      clone_expression: $ => seq(keyword('clone'), $.primary_expression),
+      clone_expression: $ => seq(
+        keyword('clone'),
+        choice(
+          $.primary_expression,
+          field('arguments', alias($._clone_argument_list, $.arguments)),
+        ),
+      ),
+
+      // As in php-src, `clone($x)` is not an argument list but a parenthesized_expression.
+      _clone_argument_list: $ => seq(
+        '(',
+        optional(choice(
+          seq(
+            alias($._clone_positional_argument, $.argument),
+            ',',
+            optional($._clone_argument_tail),
+          ),
+          seq(
+            choice(alias($._clone_argument_no_expression, $.argument), $.variadic_placeholder),
+            optional(seq(',', optional($._clone_argument_tail))),
+          ),
+        )),
+        ')',
+      ),
+
+      _clone_positional_argument: $ => $.expression,
+
+      _clone_argument_no_expression: $ => choice(
+        seq(
+          choice($._argument_name, $._clone_argument_name),
+          $.expression,
+        ),
+        $.variadic_unpacking,
+      ),
+
+      // `clone (` can also start a cast, so cast types are lexed as keywords here. Accept them as
+      // argument names too, as in `clone(object: $x)`. `array` is already in _argument_name.
+      _clone_argument_name: $ => seq(
+        field('name', alias(
+          choice(
+            ...CAST_TYPES.filter(type => type !== 'array').map(type => keyword(type, false)),
+          ),
+          $.name,
+        )),
+        ':',
+      ),
+
+      // Kept apart from `arguments`: a shared rule would change error recovery elsewhere.
+      _clone_argument_tail: $ => seq(
+        commaSep1(choice($.argument, $.variadic_placeholder)),
+        optional(','),
+      ),
 
       primary_expression: $ => choice(
         $._variable,
